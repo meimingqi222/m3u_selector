@@ -29,3 +29,9 @@
 *.bak
 *.tmp
 .DS_Store
+
+# Git Snapshot Manager - 快照目录
+.vscode-snapshots/
+.claude
+.serena
+AGENTS.md

@@ -143,12 +143,82 @@ func isValidStreamURL(url string) bool {
 		return false
 	}
 
-	// 只保留明确的流媒体链接
+	// 排除明显的网页链接
+	if strings.Contains(lowerURL, ".html") || strings.Contains(lowerURL, ".htm") ||
+		strings.Contains(lowerURL, ".php") || strings.Contains(lowerURL, ".aspx") ||
+		strings.Contains(lowerURL, ".jsp") || strings.Contains(lowerURL, ".cgi") {
+		return false
+	}
+
+	// 排除搜索引擎和统计链接
+	if strings.Contains(lowerURL, "google") || strings.Contains(lowerURL, "baidu") ||
+		strings.Contains(lowerURL, "bing") || strings.Contains(lowerURL, "analytics") ||
+		strings.Contains(lowerURL, "tracking") || strings.Contains(lowerURL, "stat") {
+		return false
+	}
+
+	// 明确的流媒体链接特征 - 优先级高
 	if strings.Contains(lowerURL, ".m3u8") || strings.Contains(lowerURL, ".m3u") ||
-		strings.Contains(lowerURL, ".ts") || strings.Contains(lowerURL, "/live/") ||
-		strings.Contains(lowerURL, "/hls/") || strings.Contains(lowerURL, "udp://") ||
-		strings.Contains(lowerURL, "rtmp://") || strings.Contains(lowerURL, "rtsp://") ||
-		strings.Contains(lowerURL, "stream") || strings.Contains(lowerURL, "play") {
+		strings.Contains(lowerURL, ".ts") || strings.Contains(lowerURL, ".m4s") ||
+		strings.Contains(lowerURL, "/live/") || strings.Contains(lowerURL, "/hls/") ||
+		strings.Contains(lowerURL, "udp://") || strings.Contains(lowerURL, "rtmp://") ||
+		strings.Contains(lowerURL, "rtsp://") {
+		return true
+	}
+
+	// 可能的流媒体链接特征 - 更宽松的检测
+	if strings.Contains(lowerURL, "stream") || strings.Contains(lowerURL, "play") ||
+		strings.Contains(lowerURL, "media") || strings.Contains(lowerURL, "video") ||
+		strings.Contains(lowerURL, "tv") || strings.Contains(lowerURL, "channel") ||
+		strings.Contains(lowerURL, "cdn") || strings.Contains(lowerURL, "live") ||
+		strings.Contains(lowerURL, "iptv") || strings.Contains(lowerURL, "cam") {
+		return true
+	}
+
+	// IP地址形式的链接（很多直播流使用IP地址）
+	if strings.Contains(lowerURL, "://") && 
+	   (strings.Contains(lowerURL, "192.168.") || strings.Contains(lowerURL, "10.") || 
+	    strings.Contains(lowerURL, "172.16.") || strings.Contains(lowerURL, "172.31.") ||
+	    strings.Contains(lowerURL, "127.0.0.1")) {
+		return true
+	}
+
+	// 端口号形式的链接（很多直播流使用非标准端口）
+	if strings.Contains(lowerURL, "://") && strings.Contains(lowerURL, ":") {
+		parts := strings.Split(lowerURL, ":")
+		if len(parts) >= 3 {
+			portPart := parts[2]
+			if len(portPart) > 0 {
+				// 提取端口号
+				endIdx := strings.IndexAny(portPart, "/?")
+				if endIdx == -1 {
+					endIdx = len(portPart)
+				}
+				portStr := portPart[:endIdx]
+				// 检查是否是数字端口号
+				for _, char := range portStr {
+					if char < '0' || char > '9' {
+						return false
+					}
+				}
+				// 端口号在常用范围内
+				if len(portStr) > 0 && len(portStr) <= 5 {
+					return true
+				}
+			}
+		}
+	}
+
+	// 域名中包含流媒体相关关键词的链接
+	if strings.Contains(lowerURL, "cdn") || strings.Contains(lowerURL, "stream") ||
+	   strings.Contains(lowerURL, "media") || strings.Contains(lowerURL, "tv") ||
+	   strings.Contains(lowerURL, "live") || strings.Contains(lowerURL, "video") {
+		return true
+	}
+
+	// 其他可能的流媒体链接 - 只要看起来像可能的媒体服务
+	if strings.Contains(lowerURL, "api") && (strings.Contains(lowerURL, "media") || 
+	   strings.Contains(lowerURL, "stream") || strings.Contains(lowerURL, "video")) {
 		return true
 	}
 
